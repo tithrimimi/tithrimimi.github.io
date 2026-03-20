@@ -186,8 +186,8 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
 
 function App() {
   const [scores,       setScores]       = useState([0, 0]);
-  const [teamNames,    setTeamNames]    = useState(() => load("teamNames", ["Team 1","Team 2"]));
-  const [playerNames,  setPlayerNames]  = useState(() => load("playerNames", [["Player 1","Player 3"],["Player 2","Player 4"]]));
+  const [teamNames,    setTeamNames]    = useState(() => load("teamNames", ["B & S","J & K"]));
+  const [playerNames,  setPlayerNames]  = useState(() => load("playerNames", [["Bob","Sylvia"],["Karin","Jeff"]]));
   const [gamesWon,     setGamesWon]     = useState(() => load("gamesWon", [0, 0]));
   const [allHistory,   setAllHistory]   = useState(() => load("allHistory", []));
   const [gameNumber,   setGameNumber]   = useState(() => load("gameNumber", 1));
