@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Euchre Scorekeeper</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0d3d1c; }
+    input { outline: none; }
+    @keyframes dealerPulse { 0%,100%{opacity:1} 50%{opacity:0.65} }
+    @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes popIn { 0%{transform:scale(0.85);opacity:0} 70%{transform:scale(1.05)} 100%{transform:scale(1);opacity:1} }
+    .btn { cursor:pointer; transition: background 0.15s, transform 0.1s; }
+    .btn:hover { opacity: 0.85; }
+    .btn:active { transform: scale(0.96); }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+const WINNING_SCORE = 10;
+const DEAL_ORDER = [
+  { team: 0, player: 0 }, { team: 1, player: 0 },
+  { team: 0, player: 1 }, { team: 1, player: 1 },
+];
+
+function load(key, def) {
+  try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : def; }
+  catch { return def; }
+}
+function save(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
+function PointPips({ count, color }) {
+  return (
+    <div style={{ display:"flex", gap:5, justifyContent:"center", flexWrap:"wrap", minHeight:28 }}>
+      {Array.from({ length: count }).map((_,i) => (
+        <span key={i} style={{ width:18, height:18, borderRadius:"50%", background:color,
+          display:"inline-block", boxShadow:"0 1px 4px rgba(0,0,0,0.35)",
+          border:"1.5px solid rgba(255,255,255,0.18)" }} />
+      ))}
+    </div>
+  );
+}
+
+function EditableName({ value, onSave, style: ex={} }) {
+  const [editing, setEditing] = useState(false);
+  const [input, setInput] = useState(value);
+  const commit = () => { if (input.trim()) onSave(input.trim()); else setInput(value); setEditing(false); };
+  if (editing) return (
+    <input autoFocus value={input} onChange={e=>setInput(e.target.value)}
+      onBlur={commit} onKeyDown={e=>e.key==="Enter"&&commit()}
+      style={{ background:"transparent", border:"none", borderBottom:"2px solid rgba(255,255,255,0.5)",
+        color:"inherit", fontSize:"inherit", fontFamily:"inherit", fontWeight:"inherit",
+        textAlign:"center", width:"100%", padding:"2px 4px", ...ex }} />
+  );
+  return (
+    <span onClick={()=>{setEditing(true);setInput(value);}} title="Click to rename"
+      style={{ cursor:"text", borderBottom:"1px dashed rgba(255,255,255,0.25)", ...ex }}>
+      {value}
+    </span>
+  );
+}
+
+function ScoreCard({ teamName, playerNames, onPlayerNameSave, score, color, pipColor, onAdd, onSubtract, isWinner, dealerPlayerIdx, gamesWon }) {
+  return (
+    <div style={{
+      background: isWinner ? "linear-gradient(135deg,#fffbe6 0%,#ffe066 100%)" : "rgba(255,255,255,0.07)",
+      borderRadius:20, padding:"20px 16px 16px", flex:1, minWidth:0,
+      border: isWinner ? "2.5px solid #f5c518" : "1.5px solid rgba(255,255,255,0.13)",
+      boxShadow: isWinner ? "0 0 40px 4px rgba(245,197,24,0.22),0 8px 32px rgba(0,0,0,0.22)" : "0 4px 24px rgba(0,0,0,0.22)",
+      position:"relative", overflow:"hidden", transition:"all 0.3s ease",
+    }}>
+      {isWinner && <div style={{ position:"absolute", top:10, right:12, fontSize:20 }}>🏆</div>}
+
+      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:17, fontWeight:700,
+        color: isWinner ? "#7a5c00" : "#f0ece3", marginBottom:6, textAlign:"center" }}>
+        <EditableName value={teamName} onSave={onPlayerNameSave(-1)} />
+      </div>
+
+      <div style={{ textAlign:"center", marginBottom:8 }}>
+        <span style={{
+          display:"inline-block",
+          background: isWinner ? "rgba(122,92,0,0.2)" : `${color}22`,
+          border: `1px solid ${isWinner ? "#c89a00" : color}55`,
+          borderRadius:20, padding:"3px 12px",
+          fontSize:11, letterSpacing:1.5, textTransform:"uppercase",
+          fontFamily:"'Crimson Pro',serif",
+          color: isWinner ? "#c89a00" : color,
+        }}>
+          {gamesWon} game{gamesWon !== 1 ? "s" : ""} won
+        </span>
+      </div>
+
+      <div style={{ marginBottom:8, display:"flex", flexDirection:"column", gap:4 }}>
+        {playerNames.map((pName,pi) => {
+          const isDealer = dealerPlayerIdx === pi;
+          return (
+            <div key={pi} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+              {isDealer && (
+                <span style={{ background:color, color:"#fff", fontSize:9, fontWeight:700,
+                  letterSpacing:1.2, textTransform:"uppercase", padding:"2px 7px",
+                  borderRadius:20, fontFamily:"'Crimson Pro',serif",
+                  boxShadow:`0 0 10px ${color}99`, whiteSpace:"nowrap",
+                  animation:"dealerPulse 2.5s ease-in-out infinite" }}>Dealer</span>
+              )}
+              <span style={{ fontFamily:"'Crimson Pro',serif", fontSize:13,
+                color: isDealer ? (isWinner ? "#7a5c00" : "#f0ece3") : "rgba(240,236,227,0.4)",
+                fontWeight: isDealer ? 700 : 400, fontStyle: isDealer ? "normal" : "italic" }}>
+                <EditableName value={pName} onSave={onPlayerNameSave(pi)} />
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ fontSize:60, fontFamily:"'Playfair Display',serif", fontWeight:900,
+        color: isWinner ? "#7a5c00" : color, textAlign:"center", lineHeight:1, marginBottom:8,
+        textShadow: isWinner ? "none" : "0 2px 16px rgba(0,0,0,0.3)" }}>{score}</div>
+
+      <div style={{ marginBottom:12, minHeight:28 }}>
+        <PointPips count={score} color={isWinner ? "#c89a00" : pipColor} />
+      </div>
+
+      <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+        <button className="btn" onClick={onSubtract} disabled={score===0||isWinner}
+          style={{ width:42, height:42, borderRadius:"50%", border:"none",
+            background:"rgba(0,0,0,0.22)", color:"#f0ece3", fontSize:22,
+            cursor: score===0||isWinner ? "not-allowed" : "pointer",
+            opacity: score===0||isWinner ? 0.3 : 1, fontWeight:700,
+            display:"flex", alignItems:"center", justifyContent:"center" }}>−</button>
+        <button className="btn" onClick={onAdd} disabled={isWinner}
+          style={{ width:42, height:42, borderRadius:"50%", border:"none",
+            background: isWinner ? "rgba(0,0,0,0.1)" : color, color:"#fff", fontSize:22,
+            cursor: isWinner ? "not-allowed" : "pointer", opacity: isWinner ? 0.4 : 1,
+            fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center",
+            boxShadow:`0 2px 12px ${color}55` }}>+</button>
+      </div>
+    </div>
+  );
+}
+
+function PointButtons({ onAddPoints }) {
+  return (
+    <div style={{ display:"flex", gap:8, justifyContent:"center", flexWrap:"wrap" }}>
+      {[{label:"+1",pts:1,tip:"Called it & won"},{label:"+2",pts:2,tip:"March (all 5 tricks)"},{label:"+4",pts:4,tip:"Loner & march"}].map(({label,pts,tip}) => (
+        <button key={pts} title={tip} className="btn" onClick={()=>onAddPoints(pts)}
+          style={{ padding:"8px 18px", borderRadius:10, border:"1.5px solid rgba(255,255,255,0.18)",
+            background:"rgba(255,255,255,0.1)", color:"#f0ece3", fontSize:15, fontWeight:700,
+            fontFamily:"'Playfair Display',serif" }}>{label}</button>
+      ))}
+    </div>
+  );
+}
+
+function ConfirmModal({ message, onConfirm, onCancel }) {
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", display:"flex",
+      alignItems:"center", justifyContent:"center", zIndex:100, padding:20 }}>
+      <div style={{ background:"#1a4a25", border:"1.5px solid rgba(255,255,255,0.18)",
+        borderRadius:18, padding:"28px 28px 22px", maxWidth:340, width:"100%",
+        textAlign:"center", animation:"popIn 0.25s ease", boxShadow:"0 8px 40px rgba(0,0,0,0.5)" }}>
+        <div style={{ fontSize:32, marginBottom:12 }}>⚠️</div>
+        <div style={{ fontFamily:"'Playfair Display',serif", color:"#f0ece3", fontSize:16, marginBottom:20, lineHeight:1.5 }}>{message}</div>
+        <div style={{ display:"flex", gap:12, justifyContent:"center" }}>
+          <button className="btn" onClick={onCancel}
+            style={{ padding:"9px 22px", borderRadius:10, border:"1.5px solid rgba(255,255,255,0.2)",
+              background:"transparent", color:"#f0ece3", fontSize:13, fontFamily:"'Crimson Pro',serif",
+              letterSpacing:1, textTransform:"uppercase" }}>Cancel</button>
+          <button className="btn" onClick={onConfirm}
+            style={{ padding:"9px 22px", borderRadius:10, border:"none",
+              background:"#c0392b", color:"#fff", fontSize:13, fontFamily:"'Crimson Pro',serif",
+              letterSpacing:1, textTransform:"uppercase", fontWeight:700 }}>Reset</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [scores,       setScores]       = useState([0, 0]);
+  const [teamNames,    setTeamNames]    = useState(() => load("teamNames", ["Team 1","Team 2"]));
+  const [playerNames,  setPlayerNames]  = useState(() => load("playerNames", [["Player 1","Player 3"],["Player 2","Player 4"]]));
+  const [gamesWon,     setGamesWon]     = useState(() => load("gamesWon", [0, 0]));
+  const [allHistory,   setAllHistory]   = useState(() => load("allHistory", []));
+  const [gameNumber,   setGameNumber]   = useState(() => load("gameNumber", 1));
+  const [showHistory,  setShowHistory]  = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [dealIdx,      setDealIdx]      = useState(0);
+  const [confirm,      setConfirm]      = useState(null);
+  const [winRecorded,  setWinRecorded]  = useState(false);
+
+  const winner = scores[0] >= WINNING_SCORE ? 0 : scores[1] >= WINNING_SCORE ? 1 : null;
+  const currentDealer = DEAL_ORDER[dealIdx];
+  const dealerTeamColor = currentDealer.team === 0 ? "#3b82f6" : "#ef4444";
+  const dealerName = playerNames[currentDealer.team][currentDealer.player];
+
+  useEffect(() => save("teamNames",   teamNames),   [teamNames]);
+  useEffect(() => save("playerNames", playerNames), [playerNames]);
+  useEffect(() => save("gamesWon",    gamesWon),    [gamesWon]);
+  useEffect(() => save("allHistory",  allHistory),  [allHistory]);
+  useEffect(() => save("gameNumber",  gameNumber),  [gameNumber]);
+
+  useEffect(() => {
+    if (winner !== null && !winRecorded) {
+      setGamesWon(w => { const n=[...w]; n[winner]++; return n; });
+      setWinRecorded(true);
+    }
+  }, [winner]);
+
+  const advanceDeal = () => setDealIdx(d => (d + 1) % 4);
+
+  const addPoints = (teamIndex, pts) => {
+    if (winner !== null) return;
+    const newScores = [...scores];
+    newScores[teamIndex] = Math.min(newScores[teamIndex] + pts, 99);
+    const entry = {
+      game: gameNumber,
+      team: teamNames[teamIndex], pts,
+      scores: [...newScores],
+      dealer: playerNames[currentDealer.team][currentDealer.player],
+      time: new Date().toLocaleTimeString(),
+    };
+    setAllHistory(h => [entry, ...h].slice(0, 300));
+    setScores(newScores);
+    advanceDeal();
+    setSelectedTeam(null);
+  };
+
+  const subtractPoint = (teamIndex) => {
+    if (winner !== null) return;
+    const n = [...scores];
+    if (n[teamIndex] > 0) n[teamIndex]--;
+    setScores(n);
+  };
+
+  const startNewGame = () => {
+    setScores([0, 0]);
+    setDealIdx(0);
+    setSelectedTeam(null);
+    setWinRecorded(false);
+    setGameNumber(g => g + 1);
+    setConfirm(null);
+  };
+
+  const resetAllStats = () => {
+    setScores([0, 0]);
+    setAllHistory([]);
+    setGamesWon([0, 0]);
+    setDealIdx(0);
+    setSelectedTeam(null);
+    setWinRecorded(false);
+    setGameNumber(1);
+    setConfirm(null);
+  };
+
+  const savePlayerName = (teamIdx, playerIdx) => (name) => {
+    if (playerIdx === -1) {
+      const n = [...teamNames]; n[teamIdx] = name; setTeamNames(n);
+    } else {
+      const n = playerNames.map(t=>[...t]); n[teamIdx][playerIdx] = name; setPlayerNames(n);
+    }
+  };
+
+  const historyByGame = allHistory.reduce((acc, entry) => {
+    const g = entry.game || 1;
+    if (!acc[g]) acc[g] = [];
+    acc[g].push(entry);
+    return acc;
+  }, {});
+  const gameKeys = Object.keys(historyByGame).map(Number).sort((a,b)=>b-a);
+
+  return (
+    <div style={{ minHeight:"100vh",
+      background:"linear-gradient(160deg,#0d3d1c 0%,#145a32 40%,#0a2e12 100%)",
+      fontFamily:"'Playfair Display',serif",
+      display:"flex", flexDirection:"column", alignItems:"center",
+      padding:"24px 16px 40px", position:"relative", overflow:"hidden" }}>
+
+      {["♠","♣","♥","♦"].map((s,i) => (
+        <div key={i} style={{ position:"fixed",
+          top:i<2?10:"auto", bottom:i>=2?10:"auto",
+          left:i%2===0?12:"auto", right:i%2===1?12:"auto",
+          fontSize:36, opacity:0.08, color:i%2===0?"#222":"#c0392b",
+          userSelect:"none", pointerEvents:"none", fontFamily:"serif" }}>{s}</div>
+      ))}
+
+      {/* Header */}
+      <div style={{ textAlign:"center", marginBottom:16 }}>
+        <div style={{ fontSize:10, letterSpacing:5, color:"rgba(240,236,227,0.4)", textTransform:"uppercase", marginBottom:4, fontFamily:"'Crimson Pro',serif" }}>Card Game</div>
+        <h1 style={{ margin:0, fontSize:40, fontWeight:900, color:"#f0ece3", letterSpacing:2, textShadow:"0 2px 20px rgba(0,0,0,0.4)" }}>EUCHRE</h1>
+        <div style={{ fontSize:10, letterSpacing:4, color:"rgba(240,236,227,0.4)", textTransform:"uppercase", fontFamily:"'Crimson Pro',serif" }}>Scorekeeper</div>
+      </div>
+
+      {/* Games won banner */}
+      <div style={{ width:"100%", maxWidth:560, marginBottom:16,
+        background:"rgba(0,0,0,0.25)", borderRadius:14,
+        border:"1px solid rgba(255,255,255,0.1)",
+        padding:"12px 20px",
+        display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+        <div style={{ textAlign:"center", flex:1 }}>
+          <div style={{ fontSize:9, letterSpacing:3, textTransform:"uppercase",
+            color:"rgba(240,236,227,0.35)", fontFamily:"'Crimson Pro',serif", marginBottom:4 }}>
+            {teamNames[0]}
+          </div>
+          <div style={{ fontSize:36, fontWeight:900, color:"#3b82f6",
+            fontFamily:"'Playfair Display',serif", lineHeight:1 }}>{gamesWon[0]}</div>
+        </div>
+        <div style={{ textAlign:"center", padding:"0 8px" }}>
+          <div style={{ fontSize:9, letterSpacing:3, textTransform:"uppercase",
+            color:"rgba(240,236,227,0.35)", fontFamily:"'Crimson Pro',serif", marginBottom:4 }}>
+            Games Won
+          </div>
+          <div style={{ fontSize:18, color:"rgba(240,236,227,0.2)", fontFamily:"serif" }}>vs</div>
+          <div style={{ fontSize:9, color:"rgba(240,236,227,0.25)", fontFamily:"'Crimson Pro',serif", marginTop:3 }}>
+            Game #{gameNumber}
+          </div>
+        </div>
+        <div style={{ textAlign:"center", flex:1 }}>
+          <div style={{ fontSize:9, letterSpacing:3, textTransform:"uppercase",
+            color:"rgba(240,236,227,0.35)", fontFamily:"'Crimson Pro',serif", marginBottom:4 }}>
+            {teamNames[1]}
+          </div>
+          <div style={{ fontSize:36, fontWeight:900, color:"#ef4444",
+            fontFamily:"'Playfair Display',serif", lineHeight:1 }}>{gamesWon[1]}</div>
+        </div>
+      </div>
+
+      {/* Dealer banner */}
+      <div key={dealIdx} style={{ width:"100%", maxWidth:560, marginBottom:16,
+        background:"rgba(0,0,0,0.3)", borderRadius:16,
+        border:`1.5px solid ${dealerTeamColor}66`,
+        padding:"12px 18px",
+        display:"flex", alignItems:"center", justifyContent:"space-between", gap:12,
+        boxShadow:`0 0 28px ${dealerTeamColor}1a`, animation:"slideIn 0.3s ease" }}>
+        <div>
+          <div style={{ fontSize:9, letterSpacing:3, textTransform:"uppercase",
+            color:"rgba(240,236,227,0.38)", fontFamily:"'Crimson Pro',serif", marginBottom:4 }}>
+            🃏 Current Dealer
+          </div>
+          <div style={{ fontSize:22, fontWeight:900, color:dealerTeamColor,
+            fontFamily:"'Playfair Display',serif", textShadow:`0 0 20px ${dealerTeamColor}55`, lineHeight:1.1 }}>
+            {dealerName}
+          </div>
+          <div style={{ fontSize:12, color:"rgba(240,236,227,0.38)", fontFamily:"'Crimson Pro',serif", fontStyle:"italic", marginTop:2 }}>
+            {teamNames[currentDealer.team]}
+          </div>
+        </div>
+        <button className="btn" onClick={advanceDeal} disabled={winner!==null}
+          style={{ padding:"9px 14px", borderRadius:12,
+            border:`1.5px solid ${dealerTeamColor}66`,
+            background: winner!==null ? "rgba(255,255,255,0.03)" : `${dealerTeamColor}1a`,
+            color: winner!==null ? "rgba(240,236,227,0.25)" : "#f0ece3",
+            fontSize:12, fontFamily:"'Crimson Pro',serif",
+            letterSpacing:1.5, textTransform:"uppercase",
+            cursor: winner!==null ? "not-allowed" : "pointer", whiteSpace:"nowrap" }}>
+          Next Deal →
+        </button>
+      </div>
+
+      {/* Score cards */}
+      <div style={{ display:"flex", gap:12, width:"100%", maxWidth:560, marginBottom:16 }}>
+        {[0,1].map(i => (
+          <ScoreCard key={i}
+            teamName={teamNames[i]}
+            playerNames={playerNames[i]}
+            onPlayerNameSave={(pi)=>savePlayerName(i,pi)}
+            score={scores[i]}
+            color={i===0?"#3b82f6":"#ef4444"}
+            pipColor={i===0?"#60a5fa":"#f87171"}
+            onAdd={()=>selectedTeam===i?addPoints(i,1):setSelectedTeam(i)}
+            onSubtract={()=>subtractPoint(i)}
+            isWinner={winner===i}
+            dealerPlayerIdx={currentDealer.team===i?currentDealer.player:null}
+            gamesWon={gamesWon[i]}
+          />
+        ))}
+      </div>
+
+      {/* Quick-add panel */}
+      {selectedTeam!==null && winner===null && (
+        <div style={{ width:"100%", maxWidth:560,
+          background:"rgba(255,255,255,0.06)", borderRadius:14,
+          padding:"14px 16px", marginBottom:14,
+          border:"1px solid rgba(255,255,255,0.12)" }}>
+          <div style={{ color:selectedTeam===0?"#60a5fa":"#f87171", fontSize:13,
+            letterSpacing:2, textTransform:"uppercase",
+            fontFamily:"'Crimson Pro',serif", marginBottom:10, textAlign:"center" }}>
+            Add points for {teamNames[selectedTeam]}
+          </div>
+          <PointButtons onAddPoints={(pts)=>addPoints(selectedTeam,pts)} />
+          <div style={{ textAlign:"center", marginTop:10 }}>
+            <button className="btn" onClick={()=>setSelectedTeam(null)}
+              style={{ background:"none", border:"none", color:"rgba(240,236,227,0.35)",
+                cursor:"pointer", fontSize:12, letterSpacing:1, textTransform:"uppercase",
+                fontFamily:"'Crimson Pro',serif" }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {selectedTeam===null && winner===null && (
+        <div style={{ color:"rgba(240,236,227,0.35)", fontSize:13, marginBottom:14,
+          letterSpacing:1, fontFamily:"'Crimson Pro',serif", fontStyle:"italic", textAlign:"center" }}>
+          Tap + on a team to score · Deal auto-advances each hand
+        </div>
+      )}
+
+      {/* Winner banner */}
+      {winner!==null && (
+        <div style={{ width:"100%", maxWidth:560,
+          background:"linear-gradient(90deg,rgba(245,197,24,0.15) 0%,rgba(245,197,24,0.28) 50%,rgba(245,197,24,0.15) 100%)",
+          border:"2px solid rgba(245,197,24,0.5)", borderRadius:14,
+          padding:"16px 20px", textAlign:"center", marginBottom:14,
+          animation:"popIn 0.35s ease" }}>
+          <div style={{ fontSize:28, marginBottom:4 }}>🎉</div>
+          <div style={{ fontSize:22, fontWeight:900, color:"#f5c518", letterSpacing:1 }}>
+            {teamNames[winner]} wins!
+          </div>
+          <div style={{ fontSize:13, color:"rgba(240,236,227,0.5)", fontFamily:"'Crimson Pro',serif", marginTop:4 }}>
+            Final score: {scores[0]} – {scores[1]}
+          </div>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div style={{ display:"flex", gap:10, marginBottom:18, flexWrap:"wrap", justifyContent:"center" }}>
+        <button className="btn" onClick={()=>setConfirm("game")}
+          style={{ padding:"10px 20px", borderRadius:10,
+            border:"1.5px solid rgba(240,236,227,0.25)",
+            background:"rgba(255,255,255,0.07)", color:"#f0ece3",
+            fontSize:13, fontFamily:"'Crimson Pro',serif",
+            letterSpacing:1.5, textTransform:"uppercase" }}>
+          New Game
+        </button>
+        <button className="btn" onClick={()=>setShowHistory(h=>!h)}
+          style={{ padding:"10px 20px", borderRadius:10,
+            border:"1.5px solid rgba(240,236,227,0.25)",
+            background: showHistory ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.07)",
+            color:"#f0ece3", fontSize:13, fontFamily:"'Crimson Pro',serif",
+            letterSpacing:1.5, textTransform:"uppercase" }}>
+          History ({allHistory.length})
+        </button>
+        <button className="btn" onClick={()=>setConfirm("stats")}
+          style={{ padding:"10px 20px", borderRadius:10,
+            border:"1.5px solid rgba(192,57,43,0.5)",
+            background:"rgba(192,57,43,0.12)", color:"#f87171",
+            fontSize:13, fontFamily:"'Crimson Pro',serif",
+            letterSpacing:1.5, textTransform:"uppercase" }}>
+          Reset Stats
+        </button>
+      </div>
+
+      {/* History log */}
+      {showHistory && (
+        <div style={{ width:"100%", maxWidth:560,
+          background:"rgba(0,0,0,0.25)", borderRadius:14,
+          padding:"14px 14px", border:"1px solid rgba(255,255,255,0.1)", marginBottom:16 }}>
+          <div style={{ fontSize:10, letterSpacing:3, color:"rgba(240,236,227,0.4)",
+            textTransform:"uppercase", fontFamily:"'Crimson Pro',serif",
+            marginBottom:12, textAlign:"center" }}>Full Score History</div>
+
+          {allHistory.length === 0 ? (
+            <div style={{ color:"rgba(240,236,227,0.3)", textAlign:"center",
+              fontStyle:"italic", fontFamily:"'Crimson Pro',serif", fontSize:14 }}>
+              No history yet
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              {gameKeys.map(gNum => (
+                <div key={gNum}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                    <div style={{ flex:1, height:1, background:"rgba(255,255,255,0.1)" }} />
+                    <span style={{ fontSize:10, letterSpacing:2, textTransform:"uppercase",
+                      color:"rgba(240,236,227,0.35)", fontFamily:"'Crimson Pro',serif", whiteSpace:"nowrap" }}>
+                      Game #{gNum}
+                    </span>
+                    <div style={{ flex:1, height:1, background:"rgba(255,255,255,0.1)" }} />
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                    {historyByGame[gNum].map((h,idx) => (
+                      <div key={idx} style={{ display:"grid",
+                        gridTemplateColumns:"1fr auto auto auto", gap:8,
+                        padding:"6px 10px", borderRadius:8,
+                        background:"rgba(255,255,255,0.04)",
+                        fontSize:13, fontFamily:"'Crimson Pro',serif", alignItems:"center" }}>
+                        <div>
+                          <span style={{ color:h.team===teamNames[0]?"#60a5fa":"#f87171" }}>
+                            {h.team}
+                          </span>
+                          <span style={{ color:"rgba(240,236,227,0.25)", fontSize:10, marginLeft:6, fontStyle:"italic" }}>
+                            dealt by {h.dealer}
+                          </span>
+                        </div>
+                        <span style={{ color:"rgba(240,236,227,0.65)" }}>+{h.pts}</span>
+                        <span style={{ color:"rgba(240,236,227,0.4)", fontSize:12 }}>{h.scores[0]}–{h.scores[1]}</span>
+                        <span style={{ color:"rgba(240,236,227,0.22)", fontSize:11 }}>{h.time}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ marginTop:8, fontSize:11, color:"rgba(240,236,227,0.22)",
+        textAlign:"center", fontFamily:"'Crimson Pro',serif", lineHeight:2, letterSpacing:0.5 }}>
+        +1 Called it & won · +2 March (all 5 tricks) · +4 Loner & march<br/>
+        Click any name to rename · Everything saves automatically
+      </div>
+
+      {confirm === "game" && (
+        <ConfirmModal
+          message={`Start Game #${gameNumber + 1}? Scores will reset but history and win totals are kept.`}
+          onConfirm={startNewGame}
+          onCancel={()=>setConfirm(null)}
+        />
+      )}
+      {confirm === "stats" && (
+        <ConfirmModal
+          message="Reset ALL stats? This permanently clears game history, win totals, and current scores."
+          onConfirm={resetAllStats}
+          onCancel={()=>setConfirm(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
