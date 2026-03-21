@@ -12,9 +12,10 @@ body { font-family: Arial; background:#0f172a; color:white; margin:0; padding:20
 .player { padding:10px; background:#111827; border-radius:10px; cursor:pointer;}
 .player.dealer { outline:3px solid orange;}
 button { padding:10px; border-radius:10px; border:none; font-weight:bold; cursor:pointer;}
-.controls { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px;}
+.controls { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:10px;}
 .history { max-height:300px; overflow:auto;}
 input { width:100%; padding:8px; border-radius:8px; border:none; margin-top:5px;}
+.section-title { margin-top:10px; font-weight:bold;}
 </style>
 </head>
 
@@ -24,22 +25,37 @@ input { width:100%; padding:8px; border-radius:8px; border:none; margin-top:5px;
 <a href="https://bicyclecards.com/how-to-play/euchre/" target="_blank" style="color:#60a5fa;">Rules</a>
 
 <div class="card">
+<h3>Teams</h3>
+<input id="team1Name" placeholder="Team 1">
+<input id="team2Name" placeholder="Team 2">
+</div>
+
+<div class="card">
 <h3>Players (click to set dealer)</h3>
 <div class="players" id="players"></div>
 </div>
 
 <div class="card">
+<h3>Round Actions</h3>
+<div class="controls">
+<button onclick="callTrump(0)">T1 Call Trump</button>
+<button onclick="callTrump(1)">T2 Call Trump</button>
+<button onclick="alone(0)">T1 Alone</button>
+<button onclick="alone(1)">T2 Alone</button>
+</div>
+</div>
+
+<div class="card">
 <h3>Score</h3>
-<div>Team 1: <span id="t1">0</span> | Games: <span id="g1">0</span></div>
-<div>Team 2: <span id="t2">0</span> | Games: <span id="g2">0</span></div>
+<div id="scoreText"></div>
 
 <div class="controls">
-<button onclick="add(0,1)">T1 +1</button>
-<button onclick="add(1,1)">T2 +1</button>
-<button onclick="add(0,2)">T1 +2</button>
-<button onclick="add(1,2)">T2 +2</button>
-<button onclick="add(0,4)">T1 +4</button>
-<button onclick="add(1,4)">T2 +4</button>
+<button onclick="add(0,1)">+1</button>
+<button onclick="add(1,1)">+1</button>
+<button onclick="add(0,2)">+2</button>
+<button onclick="add(1,2)">+2</button>
+<button onclick="add(0,4)">+4</button>
+<button onclick="add(1,4)">+4</button>
 </div>
 
 <div class="controls">
@@ -55,7 +71,7 @@ input { width:100%; padding:8px; border-radius:8px; border:none; margin-top:5px;
 </div>
 
 <script>
-const KEY="euchre_v2";
+const KEY="euchre_v3";
 
 function load(){
   return JSON.parse(localStorage.getItem(KEY)) || {
@@ -63,6 +79,7 @@ function load(){
     dealer:0,
     score:[0,0],
     games:[0,0],
+    teamNames:["Team 1","Team 2"],
     history:[],
     undo:[]
   };
@@ -76,10 +93,14 @@ function snapshot(){
   state.undo.push(JSON.stringify(state));
 }
 
+function teamLabel(i){
+  return state.teamNames[i] || ("Team "+(i+1));
+}
+
 function setDealer(i){
   snapshot();
   state.dealer=i;
-  log("Dealer manually set to "+state.names[i]);
+  log("Dealer set to "+state.names[i]);
   save(); render();
 }
 
@@ -95,7 +116,7 @@ function add(team,pts){
   state.score[team]+=pts;
   rotateDealer();
 
-  let msg=`T${team+1} +${pts}. Dealer ${oldDealer} → ${state.names[state.dealer]}`;
+  let msg=`${teamLabel(team)} +${pts}. Dealer ${oldDealer} → ${state.names[state.dealer]}`;
 
   if(state.score[team]>=10){
     state.games[team]++;
@@ -104,6 +125,18 @@ function add(team,pts){
   }
 
   log(msg);
+  save(); render();
+}
+
+function callTrump(team){
+  snapshot();
+  log(`${teamLabel(team)} called trump`);
+  save(); render();
+}
+
+function alone(team){
+  snapshot();
+  log(`${teamLabel(team)} is going alone`);
   save(); render();
 }
 
@@ -130,6 +163,18 @@ function log(msg){
   state.history.unshift(new Date().toLocaleTimeString()+" - "+msg);
 }
 
+function rename(i,val){
+  snapshot();
+  state.names[i]=val||("P"+(i+1));
+  save();
+}
+
+function setTeamName(i,val){
+  snapshot();
+  state.teamNames[i]=val||("Team "+(i+1));
+  save();
+}
+
 function render(){
   document.getElementById("players").innerHTML="";
   state.names.forEach((n,i)=>{
@@ -140,19 +185,18 @@ function render(){
     document.getElementById("players").appendChild(div);
   });
 
-  document.getElementById("t1").textContent=state.score[0];
-  document.getElementById("t2").textContent=state.score[1];
-  document.getElementById("g1").textContent=state.games[0];
-  document.getElementById("g2").textContent=state.games[1];
+  document.getElementById("team1Name").value=state.teamNames[0];
+  document.getElementById("team2Name").value=state.teamNames[1];
+
+  document.getElementById("team1Name").onchange=(e)=>setTeamName(0,e.target.value);
+  document.getElementById("team2Name").onchange=(e)=>setTeamName(1,e.target.value);
+
+  document.getElementById("scoreText").innerHTML=
+    `${teamLabel(0)}: ${state.score[0]} (Games ${state.games[0]})<br>
+     ${teamLabel(1)}: ${state.score[1]} (Games ${state.games[1]})`;
 
   document.getElementById("history").innerHTML=
     state.history.map(h=>"<div>"+h+"</div>").join("");
-}
-
-function rename(i,val){
-  snapshot();
-  state.names[i]=val||("P"+(i+1));
-  save();
 }
 
 render();
