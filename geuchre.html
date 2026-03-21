@@ -46,14 +46,24 @@
             border-radius: 8px;
             border: 1px solid #eaeaea;
         }
-        .team input {
-            width: 90%;
+        .player-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             margin-bottom: 8px;
+        }
+        .player-row input[type="text"] {
+            flex: 1;
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 6px;
             text-align: center;
             font-size: 0.9rem;
+        }
+        .player-row input[type="radio"] {
+            transform: scale(1.3);
+            cursor: pointer;
+            margin: 0 5px;
         }
         .score {
             font-size: 3.5rem;
@@ -86,7 +96,14 @@
         }
         .btn-t1 { background-color: #007aff; color: white; }
         .btn-t2 { background-color: #34c759; color: white; }
-        .btn-neutral { background-color: #ff9500; color: white; width: 100%; margin-bottom: 20px; }
+        
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .btn-action { background-color: #ff9500; color: white; flex: 1; }
+        .btn-dealer { background-color: #5856d6; color: white; flex: 1; }
         .btn-danger { background-color: #ff3b30; color: white; width: 100%; margin-top: 10px; }
         
         .history-box {
@@ -126,8 +143,14 @@
 
     <div class="card scoreboard">
         <div class="team">
-            <input type="text" id="t1p1" placeholder="Team 1 - Player 1" onchange="saveData()">
-            <input type="text" id="t1p2" placeholder="Team 1 - Player 2" onchange="saveData()">
+            <div class="player-row" title="Select to make dealer">
+                <input type="radio" name="dealer" id="d0" onchange="setDealer(0)">
+                <input type="text" id="t1p1" placeholder="Team 1 - Player 1" onchange="saveData()">
+            </div>
+            <div class="player-row" title="Select to make dealer">
+                <input type="radio" name="dealer" id="d2" onchange="setDealer(2)">
+                <input type="text" id="t1p2" placeholder="Team 1 - Player 2" onchange="saveData()">
+            </div>
             <div class="score" id="score-t1">0</div>
             <div class="games-won">Games Won: <span id="games-t1">0</span></div>
             <div class="btn-group">
@@ -138,8 +161,14 @@
         </div>
 
         <div class="team">
-            <input type="text" id="t2p1" placeholder="Team 2 - Player 1" onchange="saveData()">
-            <input type="text" id="t2p2" placeholder="Team 2 - Player 2" onchange="saveData()">
+            <div class="player-row" title="Select to make dealer">
+                <input type="radio" name="dealer" id="d1" onchange="setDealer(1)">
+                <input type="text" id="t2p1" placeholder="Team 2 - Player 1" onchange="saveData()">
+            </div>
+            <div class="player-row" title="Select to make dealer">
+                <input type="radio" name="dealer" id="d3" onchange="setDealer(3)">
+                <input type="text" id="t2p2" placeholder="Team 2 - Player 2" onchange="saveData()">
+            </div>
             <div class="score" id="score-t2">0</div>
             <div class="games-won">Games Won: <span id="games-t2">0</span></div>
             <div class="btn-group">
@@ -150,7 +179,10 @@
         </div>
     </div>
 
-    <button class="btn-neutral" onclick="turnDownHand()">Turn Down Hand (Pass)</button>
+    <div class="action-bar">
+        <button class="btn-action" onclick="turnDownHand()">Turn Down (Pass)</button>
+        <button class="btn-dealer" onclick="advanceDealer()">Next Dealer</button>
+    </div>
 
     <div class="card">
         <h3>Move History</h3>
@@ -163,11 +195,12 @@
     </div>
 
     <script>
-        // Initial state
+        // Initial state. Dealer index 0=T1P1, 1=T2P1, 2=T1P2, 3=T2P2 (Clockwise seating)
         let state = {
             names: { t1p1: "", t1p2: "", t2p1: "", t2p2: "" },
             scores: { t1: 0, t2: 0 },
             games: { t1: 0, t2: 0 },
+            dealerIndex: 0, 
             history: []
         };
 
@@ -176,6 +209,8 @@
             const saved = localStorage.getItem('euchreData');
             if (saved) {
                 state = JSON.parse(saved);
+                // Handle older saved states that might not have dealerIndex
+                if (state.dealerIndex === undefined) state.dealerIndex = 0;
             }
             updateUI();
         }
@@ -201,6 +236,12 @@
             
             document.getElementById('games-t1').innerText = state.games.t1;
             document.getElementById('games-t2').innerText = state.games.t2;
+
+            // Update dealer radio buttons
+            document.getElementById('d0').checked = state.dealerIndex === 0;
+            document.getElementById('d1').checked = state.dealerIndex === 1;
+            document.getElementById('d2').checked = state.dealerIndex === 2;
+            document.getElementById('d3').checked = state.dealerIndex === 3;
 
             const log = document.getElementById('history-log');
             log.innerHTML = "";
@@ -232,6 +273,26 @@
             }
         }
 
+        function getPlayerName(index) {
+            const defaults = ["Team 1 - Player 1", "Team 2 - Player 1", "Team 1 - Player 2", "Team 2 - Player 2"];
+            const names = [state.names.t1p1, state.names.t2p1, state.names.t1p2, state.names.t2p2];
+            return names[index] || defaults[index];
+        }
+
+        function setDealer(index) {
+            state.dealerIndex = index;
+            logAction(`🃏 ${getPlayerName(index)} is now the dealer.`);
+            saveData();
+            updateUI();
+        }
+
+        function advanceDealer() {
+            state.dealerIndex = (state.dealerIndex + 1) % 4;
+            logAction(`🃏 Deal passed to ${getPlayerName(state.dealerIndex)}.`);
+            saveData();
+            updateUI();
+        }
+
         function addScore(team, points) {
             state.scores[team] += points;
             const teamName = getTeamName(team);
@@ -246,7 +307,6 @@
         }
 
         function checkWin() {
-            // Standard Euchre is played to 10 points
             if (state.scores.t1 >= 10) {
                 const teamName = getTeamName('t1');
                 state.games.t1 += 1;
@@ -278,6 +338,7 @@
                     names: { t1p1: "", t1p2: "", t2p1: "", t2p2: "" },
                     scores: { t1: 0, t2: 0 },
                     games: { t1: 0, t2: 0 },
+                    dealerIndex: 0,
                     history: []
                 };
                 localStorage.removeItem('euchreData');
