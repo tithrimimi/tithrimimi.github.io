@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Euchre Score Tracker</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+        }
+        .header-links {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header-links a {
+            color: #007aff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .scoreboard {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+        .team {
+            flex: 1;
+            text-align: center;
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #eaeaea;
+        }
+        .team input {
+            width: 90%;
+            margin-bottom: 8px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .score {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+            line-height: 1;
+        }
+        .games-won {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:active {
+            opacity: 0.7;
+        }
+        .btn-t1 { background-color: #007aff; color: white; }
+        .btn-t2 { background-color: #34c759; color: white; }
+        .btn-neutral { background-color: #ff9500; color: white; width: 100%; margin-bottom: 20px; }
+        .btn-danger { background-color: #ff3b30; color: white; width: 100%; margin-top: 10px; }
+        
+        .history-box {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #eaeaea;
+            border-radius: 8px;
+            padding: 10px;
+            background: #fafafa;
+            font-size: 0.85rem;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        li {
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+        }
+        li:last-child {
+            border-bottom: none;
+        }
+        .timestamp {
+            color: #888;
+            font-size: 0.75rem;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Euchre Score Tracker</h1>
+    <div class="header-links">
+        <a href="https://www.bicyclecards.com/how-to-play/euchre/" target="_blank">View Official Euchre Rules</a>
+    </div>
+
+    <div class="card scoreboard">
+        <div class="team">
+            <input type="text" id="t1p1" placeholder="Team 1 - Player 1" onchange="saveData()">
+            <input type="text" id="t1p2" placeholder="Team 1 - Player 2" onchange="saveData()">
+            <div class="score" id="score-t1">0</div>
+            <div class="games-won">Games Won: <span id="games-t1">0</span></div>
+            <div class="btn-group">
+                <button class="btn-t1" onclick="addScore('t1', 1)">+1 Point</button>
+                <button class="btn-t1" onclick="addScore('t1', 2)">+2 (Euchre/All 5)</button>
+                <button class="btn-t1" onclick="addScore('t1', 4)">+4 (Lone Hand)</button>
+            </div>
+        </div>
+
+        <div class="team">
+            <input type="text" id="t2p1" placeholder="Team 2 - Player 1" onchange="saveData()">
+            <input type="text" id="t2p2" placeholder="Team 2 - Player 2" onchange="saveData()">
+            <div class="score" id="score-t2">0</div>
+            <div class="games-won">Games Won: <span id="games-t2">0</span></div>
+            <div class="btn-group">
+                <button class="btn-t2" onclick="addScore('t2', 1)">+1 Point</button>
+                <button class="btn-t2" onclick="addScore('t2', 2)">+2 (Euchre/All 5)</button>
+                <button class="btn-t2" onclick="addScore('t2', 4)">+4 (Lone Hand)</button>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn-neutral" onclick="turnDownHand()">Turn Down Hand (Pass)</button>
+
+    <div class="card">
+        <h3>Move History</h3>
+        <div class="history-box">
+            <ul id="history-log">
+                </ul>
+        </div>
+        <button class="btn-danger" onclick="resetGame()">Reset Current Game</button>
+        <button class="btn-danger" style="background-color: #8e8e93;" onclick="resetAll()">Reset All Data & History</button>
+    </div>
+
+    <script>
+        // Initial state
+        let state = {
+            names: { t1p1: "", t1p2: "", t2p1: "", t2p2: "" },
+            scores: { t1: 0, t2: 0 },
+            games: { t1: 0, t2: 0 },
+            history: []
+        };
+
+        // Load data on startup
+        function loadData() {
+            const saved = localStorage.getItem('euchreData');
+            if (saved) {
+                state = JSON.parse(saved);
+            }
+            updateUI();
+        }
+
+        // Save data to LocalStorage
+        function saveData() {
+            state.names.t1p1 = document.getElementById('t1p1').value;
+            state.names.t1p2 = document.getElementById('t1p2').value;
+            state.names.t2p1 = document.getElementById('t2p1').value;
+            state.names.t2p2 = document.getElementById('t2p2').value;
+            localStorage.setItem('euchreData', JSON.stringify(state));
+        }
+
+        // Update HTML elements
+        function updateUI() {
+            document.getElementById('t1p1').value = state.names.t1p1;
+            document.getElementById('t1p2').value = state.names.t1p2;
+            document.getElementById('t2p1').value = state.names.t2p1;
+            document.getElementById('t2p2').value = state.names.t2p2;
+            
+            document.getElementById('score-t1').innerText = state.scores.t1;
+            document.getElementById('score-t2').innerText = state.scores.t2;
+            
+            document.getElementById('games-t1').innerText = state.games.t1;
+            document.getElementById('games-t2').innerText = state.games.t2;
+
+            const log = document.getElementById('history-log');
+            log.innerHTML = "";
+            
+            // Show newest history at the top
+            const reversedHistory = [...state.history].reverse();
+            reversedHistory.forEach(entry => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="timestamp">[${entry.time}]</span> ${entry.action}`;
+                log.appendChild(li);
+            });
+        }
+
+        function logAction(actionText) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            state.history.push({ time: timeString, action: actionText });
+            saveData();
+            updateUI();
+        }
+
+        function getTeamName(teamKey) {
+            if (teamKey === 't1') {
+                return (state.names.t1p1 || state.names.t1p2) ? 
+                    `${state.names.t1p1} & ${state.names.t1p2}`.replace(/^ & | & $/g, '') : "Team 1";
+            } else {
+                return (state.names.t2p1 || state.names.t2p2) ? 
+                    `${state.names.t2p1} & ${state.names.t2p2}`.replace(/^ & | & $/g, '') : "Team 2";
+            }
+        }
+
+        function addScore(team, points) {
+            state.scores[team] += points;
+            const teamName = getTeamName(team);
+            logAction(`${teamName} scored ${points} point(s). Score is now ${state.scores.t1} - ${state.scores.t2}`);
+            checkWin();
+            saveData();
+            updateUI();
+        }
+
+        function turnDownHand() {
+            logAction(`Hand turned down/passed by all players. No points awarded.`);
+        }
+
+        function checkWin() {
+            // Standard Euchre is played to 10 points
+            if (state.scores.t1 >= 10) {
+                const teamName = getTeamName('t1');
+                state.games.t1 += 1;
+                logAction(`🏆 ${teamName} WINS THE GAME! (${state.scores.t1} - ${state.scores.t2})`);
+                state.scores.t1 = 0;
+                state.scores.t2 = 0;
+            } else if (state.scores.t2 >= 10) {
+                const teamName = getTeamName('t2');
+                state.games.t2 += 1;
+                logAction(`🏆 ${teamName} WINS THE GAME! (${state.scores.t2} - ${state.scores.t1})`);
+                state.scores.t1 = 0;
+                state.scores.t2 = 0;
+            }
+        }
+
+        function resetGame() {
+            if (confirm("Are you sure you want to reset the current game score?")) {
+                state.scores.t1 = 0;
+                state.scores.t2 = 0;
+                logAction("Current game score reset to 0-0.");
+                saveData();
+                updateUI();
+            }
+        }
+
+        function resetAll() {
+            if (confirm("Are you sure you want to completely erase all names, scores, games won, and history?")) {
+                state = {
+                    names: { t1p1: "", t1p2: "", t2p1: "", t2p2: "" },
+                    scores: { t1: 0, t2: 0 },
+                    games: { t1: 0, t2: 0 },
+                    history: []
+                };
+                localStorage.removeItem('euchreData');
+                updateUI();
+            }
+        }
+
+        // Initialize on page load
+        window.onload = loadData;
+    </script>
+</body>
+</html>
