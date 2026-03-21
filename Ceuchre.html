@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Euchre Score Keeper</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #60a5fa;
+      --good: #34d399;
+      --warn: #f59e0b;
+      --danger: #f87171;
+      --border: #374151;
+      --chip: #0b1220;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #0b1020 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.6rem;
+    }
+
+    .rules a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+    }
+
+    .players {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    @media (max-width: 620px) {
+      .players { grid-template-columns: 1fr; }
+    }
+
+    .player {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      position: relative;
+      min-height: 100px;
+    }
+
+    .player.dealer {
+      outline: 2px solid var(--warn);
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12);
+    }
+
+    .seat {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .dealer-badge {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      display: none;
+    }
+
+    .player.dealer .dealer-badge { display: inline-block; }
+
+    .player input[type="text"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .stat {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+
+    .stat .value {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .controls.tight {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    @media (max-width: 620px) {
+      .controls,
+      .controls.tight { grid-template-columns: 1fr; }
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #0b1220;
+      background: #dbeafe;
+    }
+
+    button.primary { background: #93c5fd; }
+    button.good { background: #86efac; }
+    button.warn { background: #fde68a; }
+    button.danger { background: #fca5a5; }
+    button.dark { background: #cbd5e1; }
+
+    button:active { transform: translateY(1px); }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .field {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .field input[type="number"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .current-dealer {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      margin-top: 12px;
+      color: var(--text);
+    }
+
+    .current-dealer strong {
+      color: #fbbf24;
+    }
+
+    .history {
+      max-height: 560px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .history ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .history li {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--text);
+      line-height: 1.35;
+    }
+
+    .history .time {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-top: 4px;
+    }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 18px 12px;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      background: rgba(31, 41, 55, 0.4);
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Euchre Score Keeper</h1>
+        <div class="footer-note">Autosaves to this browser with history, undo, dealer rotation, and game totals.</div>
+      </div>
+      <div class="rules">
+        <a href="https://bicyclecards.com/how-to-play/euchre/" target="_blank" rel="noopener noreferrer">Euchre rules</a>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Players</h2>
+        <div class="players" id="players"></div>
+
+        <div class="meta">
+          <div class="field">
+            <label for="targetScore">Target score to win a game</label>
+            <input id="targetScore" type="number" min="1" step="1" value="10" />
+          </div>
+          <div class="field">
+            <label>Current dealer</label>
+            <div id="dealerName" style="font-size:1.1rem;font-weight:800;">—</div>
+          </div>
+        </div>
+
+        <div class="current-dealer" id="dealerStatus"></div>
+
+        <h2 style="margin-top:16px;">Score</h2>
+        <div class="scoreboard">
+          <div class="stat">
+            <div class="label">Team 1 points</div>
+            <div class="value" id="team1Points">0</div>
+            <div class="label" style="margin-top:8px;">Games won: <span id="team1Games">0</span></div>
+          </div>
+          <div class="stat">
+            <div class="label">Team 2 points</div>
+            <div class="value" id="team2Points">0</div>
+            <div class="label" style="margin-top:8px;">Games won: <span id="team2Games">0</span></div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button class="primary" id="t1plus1">Team 1 +1</button>
+          <button class="primary" id="t2plus1">Team 2 +1</button>
+          <button class="good" id="t1plus2">Team 1 +2</button>
+          <button class="good" id="t2plus2">Team 2 +2</button>
+        </div>
+
+        <div class="controls tight" style="margin-top:10px;">
+          <button class="warn" id="turnDownBtn">Turn Down Hand</button>
+          <button class="dark" id="undoBtn">Undo</button>
+          <button class="danger" id="resetBtn">Reset All</button>
+        </div>
+
+        <div class="footer-note">
+          “Turn Down Hand” logs the action in history. Dealer automatically advances after every scored point.
+        </div>
+      </section>
+
+      <aside class="card">
+        <h2>Move history</h2>
+        <div class="history">
+          <ul id="historyList"></ul>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "euchre-scorekeeper-v1";
+
+    const defaultState = () => ({
+      names: ["Player 1", "Player 2", "Player 3", "Player 4"],
+      dealerIndex: 0,
+      teamPoints: [0, 0],
+      teamGames: [0, 0],
+      targetScore: 10,
+      history: [],
+      undoStack: []
+    });
+
+    let state = loadState();
+
+    const els = {
+      players: document.getElementById("players"),
+      targetScore: document.getElementById("targetScore"),
+      dealerName: document.getElementById("dealerName"),
+      dealerStatus: document.getElementById("dealerStatus"),
+      team1Points: document.getElementById("team1Points"),
+      team2Points: document.getElementById("team2Points"),
+      team1Games: document.getElementById("team1Games"),
+      team2Games: document.getElementById("team2Games"),
+      historyList: document.getElementById("historyList"),
+      t1plus1: document.getElementById("t1plus1"),
+      t2plus1: document.getElementById("t2plus1"),
+      t1plus2: document.getElementById("t1plus2"),
+      t2plus2: document.getElementById("t2plus2"),
+      turnDownBtn: document.getElementById("turnDownBtn"),
+      undoBtn: document.getElementById("undoBtn"),
+      resetBtn: document.getElementById("resetBtn")
+    };
+
+    function clone(obj) {
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return defaultState();
+        const parsed = JSON.parse(raw);
+        return {
+          ...defaultState(),
+          ...parsed,
+          names: Array.isArray(parsed.names) && parsed.names.length === 4 ? parsed.names : defaultState().names,
+          teamPoints: Array.isArray(parsed.teamPoints) && parsed.teamPoints.length === 2 ? parsed.teamPoints : [0, 0],
+          teamGames: Array.isArray(parsed.teamGames) && parsed.teamGames.length === 2 ? parsed.teamGames : [0, 0],
+          history: Array.isArray(parsed.history) ? parsed.history : [],
+          undoStack: Array.isArray(parsed.undoStack) ? parsed.undoStack : []
+        };
+      } catch {
+        return defaultState();
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function pushUndo() {
+      state.undoStack.push(clone(state));
+      if (state.undoStack.length > 30) state.undoStack.shift();
+    }
+
+    function nowStamp() {
+      return new Date().toLocaleString();
+    }
+
+    function teamLabel(team) {
+      return team === 0 ? "Team 1" : "Team 2";
+    }
+
+    function currentDealerName() {
+      return state.names[state.dealerIndex] || `Player ${state.dealerIndex + 1}`;
+    }
+
+    function log(message) {
+      state.history.unshift({
+        message,
+        time: nowStamp()
+      });
+    }
+
+    function rotateDealer() {
+      state.dealerIndex = (state.dealerIndex + 1) % 4;
+    }
+
+    function awardPoints(team, points) {
+      pushUndo();
+
+      const dealerBefore = currentDealerName();
+      state.teamPoints[team] += points;
+
+      rotateDealer();
+      const dealerAfter = currentDealerName();
+
+      let entry = `${teamLabel(team)} +${points}. Dealer moved from ${dealerBefore} to ${dealerAfter}. Score is now ${state.teamPoints[0]}–${state.teamPoints[1]}.`;
+
+      if (state.teamPoints[team] >= state.targetScore) {
+        state.teamGames[team] += 1;
+        entry += ` ${teamLabel(team)} won the game.`;
+        state.teamPoints = [0, 0];
+      }
+
+      log(entry);
+      saveState();
+      render();
+    }
+
+    function turnDownHand() {
+      pushUndo();
+      log(`Trump was turned down for this hand by ${currentDealerName()}.`);
+      saveState();
+      render();
+    }
+
+    function undo() {
+      if (!state.undoStack.length) return;
+      state = state.undoStack.pop();
+      saveState();
+      render();
+    }
+
+    function resetAll() {
+      const ok = confirm("Reset everything? This clears scores, games won, player names, history, and undo data.");
+      if (!ok) return;
+      localStorage.removeItem(STORAGE_KEY);
+      state = defaultState();
+      render();
+    }
+
+    function updateName(index, value) {
+      pushUndo();
+      state.names[index] = value.trim() || `Player ${index + 1}`;
+      log(`Player ${index + 1} name changed to ${state.names[index]}.`);
+      saveState();
+      render();
+    }
+
+    function updateTargetScore(value) {
+      const n = Math.max(1, parseInt(value, 10) || 10);
+      pushUndo();
+      state.targetScore = n;
+      log(`Target score set to ${n}.`);
+      saveState();
+      render();
+    }
+
+    function renderPlayers() {
+      els.players.innerHTML = "";
+      const seatLabels = ["Seat 1", "Seat 2", "Seat 3", "Seat 4"];
+
+      state.names.forEach((name, idx) => {
+        const div = document.createElement("div");
+        div.className = "player" + (idx === state.dealerIndex ? " dealer" : "");
+        div.innerHTML = `
+          <div class="seat">
+            <span>${seatLabels[idx]} ${idx % 2 === 0 ? "• Team 1" : "• Team 2"}</span>
+            <span class="dealer-badge">Dealer</span>
+          </div>
+          <input type="text" aria-label="${seatLabels[idx]} name" value="${escapeHtml(name)}" />
+        `;
+        const input = div.querySelector("input");
+        input.addEventListener("change", (e) => updateName(idx, e.target.value));
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") e.target.blur();
+        });
+        els.players.appendChild(div);
+      });
+    }
+
+    function renderHistory() {
+      els.historyList.innerHTML = "";
+      if (!state.history.length) {
+        const li = document.createElement("li");
+        li.className = "empty";
+        li.textContent = "No moves yet.";
+        els.historyList.appendChild(li);
+        return;
+      }
+
+      state.history.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <strong>${index + 1}.</strong> ${escapeHtml(item.message)}
+          <span class="time">${escapeHtml(item.time)}</span>
+        `;
+        els.historyList.appendChild(li);
+      });
+    }
+
+    function render() {
+      els.targetScore.value = state.targetScore;
+      els.dealerName.textContent = currentDealerName();
+      els.dealerStatus.innerHTML = `Current dealer: <strong>${escapeHtml(currentDealerName())}</strong> &nbsp;•&nbsp; Names are editable and saved automatically.`;
+
+      els.team1Points.textContent = state.teamPoints[0];
+      els.team2Points.textContent = state.teamPoints[1];
+      els.team1Games.textContent = state.teamGames[0];
+      els.team2Games.textContent = state.teamGames[1];
+
+      renderPlayers();
+      renderHistory();
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    els.t1plus1.addEventListener("click", () => awardPoints(0, 1));
+    els.t2plus1.addEventListener("click", () => awardPoints(1, 1));
+    els.t1plus2.addEventListener("click", () => awardPoints(0, 2));
+    els.t2plus2.addEventListener("click", () => awardPoints(1, 2));
+    els.turnDownBtn.addEventListener("click", turnDownHand);
+    els.undoBtn.addEventListener("click", undo);
+    els.resetBtn.addEventListener("click", resetAll);
+
+    els.targetScore.addEventListener("change", (e) => updateTargetScore(e.target.value));
+
+    render();
+  </script>
+</body>
+</html>
