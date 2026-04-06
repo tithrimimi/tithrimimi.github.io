@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brussels Sprout Cream Soup</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F4F7F2;
+    --warm-white: #FAFCF8;
+    --green-dark: #1E3520;
+    --green-mid: #3A6B3E;
+    --green-light: #6A9E6E;
+    --green-accent: #4E8C52;
+    --gold: #C8A94A;
+    --text: #1A2E1C;
+    --text-light: #6B8C6E;
+    --border: #C8DCC9;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: var(--cream);
+    font-family: 'Lato', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    width: 100%;
+    height: 420px;
+    overflow: hidden;
+    background: #1E3520;
+  }
+
+  .hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.72;
+    display: block;
+  }
+
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(10,25,12,0.15) 0%, rgba(10,25,12,0.78) 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 48px;
+    text-align: center;
+  }
+
+  .hero-tag {
+    font-family: 'Lato', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 14px;
+  }
+
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(36px, 7vw, 62px);
+    font-weight: 700;
+    color: #F4F7F2;
+    line-height: 1.1;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+    margin-bottom: 14px;
+  }
+
+  .hero-subtitle {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 17px;
+    color: rgba(244,247,242,0.8);
+    max-width: 500px;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    background: var(--green-dark);
+    display: flex;
+    justify-content: center;
+  }
+
+  .stat {
+    flex: 1;
+    max-width: 200px;
+    text-align: center;
+    padding: 18px 12px;
+    border-right: 1px solid rgba(255,255,255,0.08);
+  }
+  .stat:last-child { border-right: none; }
+
+  .stat-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 5px;
+  }
+
+  .stat-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: #F4F7F2;
+  }
+
+  /* Main content */
+  .content {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 56px 32px 80px;
+  }
+
+  /* Servings scaler */
+  .scaler-section {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 52px;
+    flex-wrap: wrap;
+  }
+
+  .scaler-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-light);
+    white-space: nowrap;
+  }
+
+  .scaler-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .scaler-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--green-accent);
+    background: transparent;
+    color: var(--green-accent);
+    font-size: 20px;
+    font-weight: 300;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .scaler-btn:hover { background: var(--green-accent); color: white; }
+  .scaler-btn:active { transform: scale(0.93); }
+
+  .scaler-count {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--green-dark);
+    min-width: 40px;
+    text-align: center;
+  }
+
+  .scaler-unit {
+    font-size: 13px;
+    color: var(--text-light);
+    font-weight: 400;
+  }
+
+  .scaler-note {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--green-light);
+    font-style: italic;
+  }
+
+  /* Section headings */
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .section-heading h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--green-dark);
+  }
+
+  .heading-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .heading-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    flex-shrink: 0;
+  }
+
+  /* Ingredients */
+  .ingredients-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-bottom: 56px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  @media (max-width: 520px) {
+    .ingredients-grid { grid-template-columns: 1fr; }
+  }
+
+  .ingredient-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 13px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--warm-white);
+    transition: background 0.12s;
+  }
+
+  .ingredient-row:nth-child(odd) { background: #EEF4EE; }
+  .ingredient-row:hover { background: #DFF0DF; }
+
+  .ingredient-amount {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--green-accent);
+    min-width: 100px;
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+
+  .ingredient-name {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  /* Steps */
+  .steps-list {
+    margin-bottom: 52px;
+  }
+
+  .step {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 24px;
+    align-items: flex-start;
+  }
+
+  .step-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--border);
+    min-width: 36px;
+    line-height: 1.2;
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  .step-content { padding-top: 4px; }
+
+  .step-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--green-light);
+    margin-bottom: 6px;
+  }
+
+  .step-text {
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--text);
+  }
+
+  .step-text strong { color: var(--green-accent); font-weight: 700; }
+
+  .step-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 24px 0 24px 56px;
+  }
+
+  /* Tips */
+  .tips-box {
+    background: linear-gradient(135deg, #EEF4EE 0%, #E4EEE4 100%);
+    border-left: 4px solid var(--green-light);
+    border-radius: 0 4px 4px 0;
+    padding: 24px 28px;
+  }
+
+  .tips-title {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--green-mid);
+    margin-bottom: 14px;
+  }
+
+  .tip {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text);
+    margin-bottom: 8px;
+    padding-left: 14px;
+    position: relative;
+  }
+  .tip::before {
+    content: '✦';
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+    font-size: 9px;
+    top: 4px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 12px;
+    color: var(--text-light);
+    border-top: 1px solid var(--border);
+    background: var(--warm-white);
+  }
+
+  .amount-update { animation: pop 0.25s ease; }
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.18); color: var(--gold); }
+    100% { transform: scale(1); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <img class="hero-img"
+    src="https://images.unsplash.com/photo-1547592166-23ac45744acd?w=1200&q=80"
+    onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1603105037880-880cd4edfb0d?w=1200&q=80'"
+    alt="Brussels Sprout Cream Soup"
+  />
+  <div class="hero-overlay">
+    <div class="hero-tag">Comfort Food</div>
+    <h1 class="hero-title">Brussels Sprout<br>Cream Soup</h1>
+    <p class="hero-subtitle">Velvety, nourishing soup with a silky finish and a hint of lemon &amp; nutmeg</p>
+  </div>
+</div>
+
+<!-- Stats bar -->
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-label">Prep</div>
+    <div class="stat-value">10 min</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Cook</div>
+    <div class="stat-value">25–30 min</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Serves</div>
+    <div class="stat-value" id="stat-servings">4 people</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Type</div>
+    <div class="stat-value">Vegetarian</div>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- Servings scaler -->
+  <div class="scaler-section">
+    <span class="scaler-label">Adjust Servings</span>
+    <div class="scaler-controls">
+      <button class="scaler-btn" id="btn-minus" aria-label="Decrease servings">−</button>
+      <span class="scaler-count" id="serving-count">4</span>
+      <button class="scaler-btn" id="btn-plus" aria-label="Increase servings">+</button>
+    </div>
+    <span class="scaler-unit">people</span>
+    <span class="scaler-note">All amounts update automatically</span>
+  </div>
+
+  <!-- Ingredients -->
+  <div class="section-heading">
+    <div class="heading-dot"></div>
+    <h2>Ingredients</h2>
+    <div class="heading-line"></div>
+  </div>
+
+  <div class="ingredients-grid" id="ingredients-grid"></div>
+
+  <!-- Method -->
+  <div class="section-heading">
+    <div class="heading-dot"></div>
+    <h2>Method</h2>
+    <div class="heading-line"></div>
+  </div>
+
+  <div class="steps-list">
+    <div class="step">
+      <div class="step-number">01</div>
+      <div class="step-content">
+        <div class="step-title">Prep the sprouts</div>
+        <p class="step-text">Wash and clean the Brussels sprouts, then cut them in half. Bring a pot of lightly salted water to a boil, add the sprouts, then reduce heat to medium and cook for <strong>15 minutes</strong> until al dente.</p>
+      </div>
+    </div>
+    <hr class="step-divider">
+    <div class="step">
+      <div class="step-number">02</div>
+      <div class="step-content">
+        <div class="step-title">Fry the onions</div>
+        <p class="step-text">Dice the onions and fry in butter over medium heat until glossy and softened.</p>
+      </div>
+    </div>
+    <hr class="step-divider">
+    <div class="step">
+      <div class="step-number">03</div>
+      <div class="step-content">
+        <div class="step-title">Build the soup</div>
+        <p class="step-text">Drain the Brussels sprouts and add them to the pot with the onions. Pour in the vegetable broth and let everything cook together for <strong>5–8 minutes</strong>. Remove from heat.</p>
+      </div>
+    </div>
+    <hr class="step-divider">
+    <div class="step">
+      <div class="step-number">04</div>
+      <div class="step-content">
+        <div class="step-title">Add cream &amp; blend</div>
+        <p class="step-text">Reserve a little sour cream for garnishing, then stir the rest into the soup. <strong>Purée until smooth</strong> using a hand blender or standing blender.</p>
+      </div>
+    </div>
+    <hr class="step-divider">
+    <div class="step">
+      <div class="step-number">05</div>
+      <div class="step-content">
+        <div class="step-title">Season &amp; serve</div>
+        <p class="step-text">Season with salt, pepper, lemon juice, and a grating of nutmeg. Ladle into bowls, top each with a small dollop of sour cream, and finish with a sprinkle of chopped parsley.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tips -->
+  <div class="tips-box">
+    <div class="tips-title">Cook's Notes</div>
+    <p class="tip"><strong>Broth choice:</strong> Vegetable broth keeps it vegetarian and clean-tasting. Chicken or beef broth adds a heartier depth of flavour.</p>
+    <p class="tip"><strong>Lighter option:</strong> Swap full-fat sour cream for fat-reduced sour cream or crème fraîche — it still gives a lovely silky texture.</p>
+    <p class="tip"><strong>Smooth finish:</strong> For an extra-velvety result, pass the puréed soup through a fine sieve before serving.</p>
+  </div>
+
+</div>
+
+<div class="footer">Brussels Sprout Cream Soup Recipe &nbsp;·&nbsp; Saved from Claude</div>
+
+<script>
+  const BASE = 4;
+
+  const ingredients = [
+    { base: 600,  unit: 'g',    name: 'Brussels sprouts',     format: v => formatG(v) },
+    { base: 500,  unit: 'ml',   name: 'water',                format: v => formatMl(v) },
+    { base: 2,    unit: '',     name: 'onions',               format: v => formatNum(v, 'onion', 'onions') },
+    { base: 10,   unit: 'g',    name: 'unsalted butter',      format: v => formatG(v) },
+    { base: 750,  unit: 'ml',   name: 'vegetable broth',      format: v => formatMl(v) },
+    { base: 150,  unit: 'g',    name: 'sour cream',           format: v => formatG(v) },
+    { base: 2,    unit: 'tsp',  name: 'lemon juice',          format: v => formatTsp(v) },
+    { base: 1,    unit: 'tbsp', name: 'fresh parsley, chopped', format: v => formatTbsp(v) },
+    { base: 0,    unit: '',     name: 'salt, pepper & nutmeg', format: () => 'to taste' },
+  ];
+
+  function formatNum(v, singular, plural) {
+    const r = Math.round(v * 4) / 4;
+    return frac(r) + ' ' + (r === 1 ? singular : plural);
+  }
+  function formatTsp(v) { return frac(Math.round(v * 8) / 8) + ' tsp'; }
+  function formatTbsp(v) { return frac(Math.round(v * 4) / 4) + ' tbsp'; }
+  function formatG(v) {
+    const g = Math.round(v);
+    const oz = Math.round(v / 28.35 * 10) / 10;
+    return `${g}g <span style="color:var(--text-light);font-size:12px;font-weight:400">(${oz}oz)</span>`;
+  }
+  function formatMl(v) {
+    const ml = Math.round(v);
+    const floz = Math.round(v / 29.574 * 10) / 10;
+    return `${ml}ml <span style="color:var(--text-light);font-size:12px;font-weight:400">(${floz}fl oz)</span>`;
+  }
+
+  function frac(v) {
+    const whole = Math.floor(v);
+    const rem = v - whole;
+    const fracs = {0.125:'⅛', 0.25:'¼', 0.333:'⅓', 0.5:'½', 0.667:'⅔', 0.75:'¾', 0.875:'⅞'};
+    if (Math.abs(rem) < 0.05) return whole || '0';
+    const closest = Object.keys(fracs).reduce((a, b) => Math.abs(b - rem) < Math.abs(a - rem) ? b : a);
+    if (Math.abs(rem - parseFloat(closest)) < 0.07) return (whole ? whole + ' ' : '') + fracs[closest];
+    return (Math.round(v * 4) / 4).toString();
+  }
+
+  let servings = BASE;
+
+  function renderIngredients() {
+    const grid = document.getElementById('ingredients-grid');
+    const ratio = servings / BASE;
+    grid.innerHTML = ingredients.map(ing => {
+      const scaled = ing.base * ratio;
+      return `
+        <div class="ingredient-row">
+          <span class="ingredient-amount">${ing.format(scaled)}</span>
+          <span class="ingredient-name">${ing.name}</span>
+        </div>`;
+    }).join('');
+  }
+
+  function updateServings(n) {
+    servings = Math.max(1, Math.min(48, n));
+    document.getElementById('serving-count').textContent = servings;
+    document.getElementById('stat-servings').textContent = servings + (servings === 1 ? ' person' : ' people');
+    const el = document.getElementById('serving-count');
+    el.classList.remove('amount-update');
+    void el.offsetWidth;
+    el.classList.add('amount-update');
+    renderIngredients();
+  }
+
+  document.getElementById('btn-minus').addEventListener('click', () => updateServings(servings - 1));
+  document.getElementById('btn-plus').addEventListener('click', () => updateServings(servings + 1));
+
+  renderIngredients();
+</script>
+</body>
+</html>
